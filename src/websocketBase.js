@@ -9,6 +9,7 @@ class WebsocketBase extends APIBase {
     this.callbacks = options.callbacks || {}
     this.reconnectDelay = options.reconnectDelay || 5000
     this.wsConnection = {}
+    this.reconnectTimeout = () => {}
   }
 
   isConnected () {
@@ -51,11 +52,12 @@ class WebsocketBase extends APIBase {
       this.logger.error(err)
     })
 
+    clearTimeout(this.reconnectTimeout)
     ws.on('close', (closeEventCode, reason) => {
       if (!this.wsConnection.closeInitiated) {
         this.callbacks.close && this.callbacks.close()
         this.logger.warn(`Connection close due to ${closeEventCode}: ${reason}.`)
-        setTimeout(() => {
+        this.reconnectTimeout = setTimeout(() => {
           this.logger.debug('Reconnect to the server.')
           this.initConnect(url)
         }, this.reconnectDelay)
